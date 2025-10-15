@@ -64,9 +64,8 @@ def get_dataloaders(batch_size=32, num_workers=1):
         transforms.Resize((IMG_SIZE, IMG_SIZE)),
         transforms.ToTensor()
     ])
-    temp_dataset = ADNIDataset(split="train", transform=temp_transform)
-    mean, std = compute_mean_std(temp_dataset)
-
+    # temp_dataset = ADNIDataset(split="train", transform=temp_transform)
+    # mean, std = compute_mean_std(temp_dataset)
     # Final transforms with computed stats
     def get_transforms(train=True):
         if train:
@@ -76,13 +75,15 @@ def get_dataloaders(batch_size=32, num_workers=1):
                 transforms.RandomRotation(10),
                 transforms.ColorJitter(brightness=0.2, contrast=0.2),
                 transforms.ToTensor(),
-                transforms.Normalize(mean=mean, std=std)
+                transforms.Normalize(mean=[0.1156277284026146, 0.1156277284026146, 0.1156277284026146], 
+                                     std=[0.22283731400966644, 0.22283731400966644, 0.22283731400966644])
             ])
         else:
             return transforms.Compose([
                 transforms.Resize((IMG_SIZE, IMG_SIZE)),
                 transforms.ToTensor(),
-                transforms.Normalize(mean=mean, std=std)
+                transforms.Normalize(mean=[0.1156277284026146, 0.1156277284026146, 0.1156277284026146], 
+                                     std=[0.22283731400966644, 0.22283731400966644, 0.22283731400966644])
             ])
 
     train_dataset = ADNIDataset(split="train", transform=get_transforms(train=True))
