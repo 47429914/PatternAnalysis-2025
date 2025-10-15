@@ -56,10 +56,9 @@ class DownsampleLayer(nn.Module):
 
 # Full ConvNeXt model
 class ConvNeXt(nn.Module):
-    def __init__(self, in_chans=3, num_classes=1, depths=[2, 2, 3, 2], dims=[32, 64, 128, 256], drop_path_rate=0.1):
+    def __init__(self, in_chans=1, num_classes=1, depths=[2, 2, 3, 2], dims=[32, 64, 128, 256], drop_path_rate=0.2):
         super().__init__()
         self.stem = nn.Conv2d(in_chans, dims[0], kernel_size=4, stride=4)
-        self.stem_norm = nn.LayerNorm(dims[0], eps=1e-6)
 
         self.downsample_layers = nn.ModuleList()
         for i in range(3):
@@ -79,7 +78,7 @@ class ConvNeXt(nn.Module):
             self.stages.append(nn.Sequential(*blocks))
 
         self.final_norm = nn.LayerNorm(dims[-1], eps=1e-6)
-        self.dropout = nn.Dropout(p=0.3)
+        self.dropout = nn.Dropout(p=0.4)
         self.head = nn.Linear(dims[-1], num_classes)
 
     def forward(self, x):

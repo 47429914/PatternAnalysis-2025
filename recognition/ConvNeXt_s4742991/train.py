@@ -30,7 +30,7 @@ def train():
     # Loss and optimizer
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
-    scheduler = CosineAnnealingLR(optimizer, T_max=EPOCHS)
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=5, verbose=True)
 
     best_acc = 0.0
 
@@ -57,7 +57,7 @@ def train():
 
         train_acc = correct / total
         train_loss = total_loss / total
-        scheduler.step()
+        scheduler.step(val_acc)
     
         # Validation
         model.eval()
