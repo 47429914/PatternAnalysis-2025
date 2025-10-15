@@ -39,7 +39,7 @@ class ADNIDataset(Dataset):
         image = Image.open(sample["path"]).convert("RGB")
         if self.transform:
             image = self.transform(image)
-        return image, sample["label"]
+        return image, sample["label"], sample["patient_id"]
 
 # Compute mean and std from training set
 def compute_mean_std(dataset):
