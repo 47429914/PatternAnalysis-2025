@@ -11,10 +11,12 @@ EPOCHS = 30
 BATCH_SIZE = 32
 LR = 1e-3
 WEIGHT_DECAY = 1e-4
+MAX_PATIENCE = 5
 
 def train():
     # Load data
     train_loader, test_loader = get_dataloaders(batch_size=BATCH_SIZE)
+    current_patience = 0
 
     # Model
     model = get_model().to(DEVICE)
@@ -73,6 +75,11 @@ def train():
             best_acc = val_acc
             torch.save(model.state_dict(), "best_model.pth")
             print("✅ Best model updated.")
+        else:
+            if (current_patience > MAX_PATIENCE):
+                break
+            else:
+                current_patience += 1
 
 if __name__ == "__main__":
     train()
