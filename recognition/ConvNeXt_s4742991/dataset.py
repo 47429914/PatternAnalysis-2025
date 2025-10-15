@@ -36,7 +36,7 @@ class ADNIDataset(Dataset):
 
     def __getitem__(self, idx):
         sample = self.samples[idx]
-        image = Image.open(sample["path"]).convert("RGB")
+        image = Image.open(sample["path"]).convert("L")
         if self.transform:
             image = self.transform(image)
         return image, sample["label"], sample["patient_id"]
@@ -44,46 +44,50 @@ class ADNIDataset(Dataset):
 # Compute mean and std from training set
 def compute_mean_std(dataset):
     loader = DataLoader(dataset, batch_size=64, shuffle=False, num_workers=1)
-    mean = torch.zeros(3)
-    std = torch.zeros(3)
+    mean = 0.0
+    std = 0.0
+    total_images = 0
     print("🔄 Computing mean and std from training set...")
-    for images, _ in loader:
-        for i in range(3):
-            mean[i] += images[:, i, :, :].mean()
-            std[i] += images[:, i, :, :].std()
-    mean /= len(loader)
-    std /= len(loader)
-    print(f"✅ Computed mean: {mean.tolist()}")
-    print(f"✅ Computed std: {std.tolist()}")
-    return mean.tolist(), std.tolist()
+    for images, _, _ in loader:  # Ignore labels and patient IDs
+        batch_samples = images.size(0)
+        images = images.view(batch_samples, -1)
+        mean += images.mean(dim=1).sum()
+        std += images.std(dim=1).sum()
+        total_images += batch_samples
+    mean /= total_images
+    std /= total_images
+    print(f"✅ Computed mean: {mean.item()}")
+    print(f"✅ Computed std: {std.item()}")
+    return mean.item(), std.item()
 
 # Data loader factory
 def get_dataloaders(batch_size=32, num_workers=1):
-    # Temporary transform for computing stats
+    # Compute mean and std for single-channel images
     temp_transform = transforms.Compose([
         transforms.Resize((IMG_SIZE, IMG_SIZE)),
         transforms.ToTensor()
     ])
-    # temp_dataset = ADNIDataset(split="train", transform=temp_transform)
-    # mean, std = compute_mean_std(temp_dataset)
-    # Final transforms with computed stats
+    temp_dataset = ADNIDataset(split="train", transform=temp_transform)
+    mean, std = compute_mean_std(temp_dataset)
+
     def get_transforms(train=True):
         if train:
             return transforms.Compose([
                 transforms.Resize((IMG_SIZE, IMG_SIZE)),
-                transforms.RandomHorizontalFlip(),
-                transforms.RandomRotation(10),
-                transforms.ColorJitter(brightness=0.2, contrast=0.2),
+                transforms.RandomResizedCrop(IMG_SIZE, scale=(0.8, 1.0)),
+                transforms.RandomHorizontalFlip(p=0.5),
+                transforms.RandomRotation(15),
+                transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1)),
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0.1156277284026146, 0.1156277284026146, 0.1156277284026146], 
-                                     std=[0.22283731400966644, 0.22283731400966644, 0.22283731400966644])
+                transforms.Lambda(lambda x: x + torch.randn_like(x) * 0.05),
+                transforms.Lambda(lambda x: x * torch.FloatTensor([torch.rand(1).item() * 0.2 + 0.9])),
+                transforms.Normalize(mean=[mean], std=[std])
             ])
         else:
             return transforms.Compose([
                 transforms.Resize((IMG_SIZE, IMG_SIZE)),
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0.1156277284026146, 0.1156277284026146, 0.1156277284026146], 
-                                     std=[0.22283731400966644, 0.22283731400966644, 0.22283731400966644])
+                transforms.Normalize(mean=[mean], std=[std])
             ])
 
     train_dataset = ADNIDataset(split="train", transform=get_transforms(train=True))
