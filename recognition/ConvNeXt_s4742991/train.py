@@ -77,6 +77,7 @@ def train():
             print("✅ Best model updated.")
         else:
             if (current_patience > MAX_PATIENCE):
+                print("Validation accuracy not improving: Ending training to prevent overfitting")
                 break
             else:
                 current_patience += 1
