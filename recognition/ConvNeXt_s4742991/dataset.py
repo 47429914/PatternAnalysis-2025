@@ -65,6 +65,9 @@ def get_dataloaders(batch_size=32, num_workers=1):
     train_dataset = ADNIDataset(split="train", transform=get_transforms(train=True))
     test_dataset = ADNIDataset(split="test", transform=get_transforms(train=False))
 
+    print("Train label distribution:", Counter([s['label'] for s in train_dataset.samples]))
+    print("Test label distribution:", Counter([s['label'] for s in test_dataset.samples]))
+
     train_loader = DataLoader(train_dataset, batch_size=batch_size,
                               shuffle=True, num_workers=num_workers)
     test_loader = DataLoader(test_dataset, batch_size=batch_size,
