@@ -11,7 +11,7 @@ EPOCHS = 30
 BATCH_SIZE = 32
 LR = 1e-3
 WEIGHT_DECAY = 1e-4
-MAX_PATIENCE = 5
+MAX_PATIENCE = 10
 
 def train():
     # Load data
@@ -73,11 +73,12 @@ def train():
         # Save best model
         if val_acc > best_acc:
             best_acc = val_acc
+            current_patience = 0
             torch.save(model.state_dict(), "best_model.pth")
             print("✅ Best model updated.")
         else:
             if (current_patience > MAX_PATIENCE):
-                print("Validation accuracy not improving: Ending training to prevent overfitting")
+                print("Validation accuracy not improving: Ending training to save resources")
                 break
             else:
                 current_patience += 1
