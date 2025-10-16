@@ -30,8 +30,7 @@ def train():
     # Loss and optimizer
     criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=5, verbose=True)
-
+    scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=5)
     best_acc = 0.0
 
     for epoch in range(EPOCHS):
@@ -57,8 +56,7 @@ def train():
 
         train_acc = correct / total
         train_loss = total_loss / total
-        scheduler.step(val_acc)
-    
+        
         # Validation
         model.eval()
         patient_probs = defaultdict(list)
@@ -83,6 +81,7 @@ def train():
         # Compute patient-level accuracy
         correct = sum(final_preds[pid] == final_labels[pid] for pid in final_preds)
         val_acc = correct / len(final_preds)
+        scheduler.step(val_acc)
         print(f"Epoch {epoch+1:02d} | Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} | Val Acc: {val_acc:.4f}")
 
         # Save best model
