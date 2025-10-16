@@ -56,7 +56,7 @@ class DownsampleLayer(nn.Module):
 
 # Full ConvNeXt model
 class ConvNeXt(nn.Module):
-    def __init__(self, in_chans=1, num_classes=1, depths=[2, 2, 3, 2], dims=[32, 64, 128, 256], drop_path_rate=0.2):
+    def __init__(self, in_chans=1, num_classes=1, depths=[3, 3, 9, 3], dims=[96, 192, 384, 768], drop_path_rate=0.2):
         super().__init__()
         self.stem = nn.Conv2d(in_chans, dims[0], kernel_size=4, stride=4)
         self.stem_norm = nn.LayerNorm(dims[0], eps=1e-6)
