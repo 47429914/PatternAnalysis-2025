@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 from dataset import get_dataloaders
 from modules import get_model, count_parameters
 import numpy as np
@@ -19,25 +19,29 @@ N_FOLDS = 5
 def train():
     print(f"Device: {DEVICE}")
     
+    # Store results for each fold
+    fold_val_accuracies = []
+    
     # Cross-validation loop
     for fold in range(N_FOLDS):
         print(f"\n===== Fold {fold + 1}/{N_FOLDS} =====")
-        # Load data for this fold
-        train_loader, val_loader, test_loader = get_dataloaders(batch_size=BATCH_SIZE, fold=fold)
-        current_patience = 0
-
-        # Model
+        # Load data for this fold (train on 4 folds, validate on 1)
+        train_loader, val_loader, _ = get_dataloaders(batch_size=BATCH_SIZE, fold=fold)
+        
+        # Model (reset for each fold)
         model = get_model().to(DEVICE)
         print(f"Trainable parameters: {count_parameters(model):,}")
 
         # Loss and optimizer
         criterion = nn.BCEWithLogitsLoss()
         optimizer = optim.AdamW(model.parameters(), lr=LR, weight_decay=WEIGHT_DECAY)
-        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=5)
+        scheduler = ReduceLROnPlateau(optimizer, mode='max', factor=0.5, patience=5)
         best_acc = 0.0
+        current_patience = 0
         best_model_path = f"best_model_fold{fold}.pth"
 
         for epoch in range(EPOCHS):
+            # Training phase
             model.train()
             total_loss = 0.0
             correct = 0
@@ -61,7 +65,7 @@ def train():
             train_acc = correct / total
             train_loss = total_loss / total
 
-            # Validation
+            # Validation phase
             model.eval()
             patient_probs = defaultdict(list)
             patient_labels = {}
@@ -84,7 +88,7 @@ def train():
 
             # Compute patient-level accuracy
             correct = sum(final_preds[pid] == final_labels[pid] for pid in final_preds)
-            val_acc = correct / len(final_preds)
+            val_acc = correct / len(final_preds) if len(final_preds) > 0 else 0.0
             scheduler.step(val_acc)
             print(f"Fold {fold + 1} | Epoch {epoch + 1:02d} | Train Loss: {train_loss:.4f} | Train Acc: {train_acc:.4f} | Val Acc: {val_acc:.4f}")
 
@@ -97,11 +101,18 @@ def train():
             else:
                 current_patience += 1
                 if current_patience > MAX_PATIENCE:
-                    print(f"Validation accuracy not improving for fold {fold + 1}: Ending training to save resources")
+                    print(f"Validation accuracy not improving for fold {fold + 1}: Ending training")
                     break
 
-        # Print best validation accuracy for this fold
+        # Store best validation accuracy for this fold
+        fold_val_accuracies.append(best_acc)
         print(f"Best validation accuracy for fold {fold + 1}: {best_acc:.4f}")
+
+    # Compute and print average accuracy across folds
+    avg_val_acc = np.mean(fold_val_accuracies)
+    print(f"\n===== Final Results =====")
+    print(f"Accuracy for each fold: {[f'{acc:.4f}' for acc in fold_val_accuracies]}")
+    print(f"Average Validation Accuracy across {N_FOLDS} folds: {avg_val_acc:.4f}")
 
 if __name__ == "__main__":
     train()
