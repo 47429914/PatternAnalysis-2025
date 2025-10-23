@@ -4,13 +4,13 @@ from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 import torch
-from sklearn.model_selection import StratifiedKFold
+from sklearn.model_selection import train_test_split
 import numpy as np
 
 # Constants
 DATA_DIR = "/home/groups/comp3710/ADNI/AD_NC"
 IMG_SIZE = 224
-N_FOLDS = 5
+VAL_SPLIT = 0.15
 
 # Custom Dataset
 class ADNIDataset(Dataset):
@@ -53,8 +53,8 @@ def compute_mean_std(dataset):
     print(f"✅ Computed std: {std.item()}")
     return mean.item(), std.item()
 
-# Data loader factory with K-fold cross-validation
-def get_dataloaders(batch_size=32, num_workers=1, fold=0):
+# Data loader factory with train-val-test split
+def get_dataloaders(batch_size=32, num_workers=1):
     # Load all training samples
     train_samples = []
     train_split_dir = os.path.join(DATA_DIR, "train")
@@ -99,18 +99,10 @@ def get_dataloaders(batch_size=32, num_workers=1, fold=0):
     patient_labels = [patient_to_samples[pid][0]["label"] for pid in patient_ids]
     print(f"🔢 Total patients found: {len(patient_ids)}")
 
-    # Create K-fold splits
-    skf = StratifiedKFold(n_splits=N_FOLDS, shuffle=True, random_state=42)
-    try:
-        folds = list(skf.split(patient_ids, patient_labels))
-        train_idx, val_idx = folds[fold]
-    except ValueError as e:
-        print(f"⚠️ Error in K-fold splitting: {e}. Using all patients for training.")
-        train_idx, val_idx = range(len(patient_ids)), []
-
-    # Convert indices to patient IDs
-    train_pids = [patient_ids[i] for i in train_idx]
-    val_pids = [patient_ids[i] for i in val_idx] if len(val_idx) > 0 else []
+    # Create train-validation split (stratified by patient labels)
+    train_pids, val_pids = train_test_split(
+        patient_ids, test_size=VAL_SPLIT, stratify=patient_labels, random_state=42
+    )
 
     # Assign samples to train and val based on patient IDs
     train_samples_fold = []
@@ -122,8 +114,8 @@ def get_dataloaders(batch_size=32, num_workers=1, fold=0):
         else:
             val_samples_fold.extend(samples)
 
-    print(f"🔢 Train samples for fold {fold}: {len(train_samples_fold)}")
-    print(f"🔢 Val samples for fold {fold}: {len(val_samples_fold)}")
+    print(f"🔢 Train samples: {len(train_samples_fold)}")
+    print(f"🔢 Val samples: {len(val_samples_fold)}")
 
     # Compute mean and std from training samples
     temp_transform = transforms.Compose([
