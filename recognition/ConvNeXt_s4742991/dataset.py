@@ -126,6 +126,7 @@ def get_dataloaders(batch_size=32, num_workers=1):
     mean, std = compute_mean_std(temp_dataset)
 
     def get_transforms(train=True):
+        # Perform random transforms to train images to improve generalization
         if train:
             return transforms.Compose([
                 transforms.Resize((IMG_SIZE, IMG_SIZE)),

@@ -11,7 +11,7 @@ THRESHOLD = 0.5
 
 def predict():
     # Load test data
-    _, test_loader = get_dataloaders(batch_size=32)
+    _, _, test_loader = get_dataloaders(batch_size=32)
 
     # Load model
     model = get_model().to(DEVICE)
