@@ -1,12 +1,3 @@
-ConvNeXt Model for solving project 8
-Classify Alzheimer’s disease (normal and AD) of the ADNI brain data (see Appendix for link) using one
- of the latest vision models such as the ConvNeXt [9] or GFNet [10] set having a minimum accuracy of 0.8
- on the test set. [Hard Difficulty]
-
-Dataset located at:
-/home/groups/comp3710/ADNI
-on Rangpur cluster
-
 # ConvNext Model for Classifying Alzeimers from Brain MRI scans
 **Xander Akison (s4742991)**
 ### Table of Contents
@@ -28,12 +19,23 @@ Diagnosis through image classification of medical scans is becoming an increasin
 This package seeks to implement a ConvNext Model capable of identifying Alzheimer's disease from labelled brain MRI scans contained in the ADNI dataset. The goal accuracy as provided in the ask is 80% or greater.
 ### Model
 [`modules.py`](modules.py)
-![ConvNext Architecture](images/ConvNextDiagram.png)
+![ConvNext Architecture](images/ConvNext_Structure.png)
 *Figure 1: ConvNext Architecture*
 The designed model followed the standard practice structure. Incorporating four ConvNext Layers with the standard [3, 3, 9, 3] layout commonly seen in ConvNext-Tiny and ConvNext-Small applications. Where the balance of efficiency and power is paramount for classification success without spending large amounts of resources training too many weights. The larger third layer provides good mid-level feature extraction, something that is particularly useful in MRI image reasoning as it captures a lot of semantic abstraction, improving generalization.  
+**Stem Layer**: The stem layer helps reduce spatial complexity by reducing the image height and width by a factor of four using a 2D convolution with a kernel and stride of four. Simultaneously, this layer takes the input dimension of one (greyscale) and creates enough output channels for the first ConvNext block (in this case 96 channels). The output is then normalized using layer norm before being passed into the series of computational blocks.
+**ConvNext Block:** The model includes four ConvNext layers, each with double the channels as the previous block and a quarter of the image dimension space as the previous (from downsampling). The blocks follow the structure shown in Figure 2.
+![ConvNext Block](images/ConvNext_Block.png)
+*Figure 2: ConvNext Block*
+The major differences to note between ConvNext and traditional ConvNet are:
+- Change from standard Conv2d to Depthwise Conv2d: Groups the convolution by channels to reduce computation and capture broader context.
+- Change from BatchNorm to LayerNorm: Improves stability for small batch sizes
+- Activation uses GELU instead of ReLU
+- Residual Scaling: The Gamma Scale step slowly increases the transformations effect on the residual outcome
+- DropPath: Random chance of not using transform at all, helps improve regularization  
 
-The models ConvNext blocks also follow standard practises
+These changes allow for ConvNext models to generalize better on input by making each block behave more like a ViT without using attention.
 ### Data Loading
+The ADNI data set can be downloaded from the [ADNI](https://adni.loni.usc.edu/) website. Although for the purposes of this report, the data was used directly from the University of Queensland's (UQ) rangpur cluster, where the train and test datasets were pulled from /home/groups/comp3710/ADNI. The 
 ### Training
 ### Testing/Prediction
 ### Results
