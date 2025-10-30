@@ -23,12 +23,21 @@ on Rangpur cluster
     - [References](#references)
     - [Dependencies](#dependencies)
 ### Introduction
+Diagnosis through image classification of medical scans is becoming an increasingly more valuable use of pattern recognition tools in the modern world. With more and more accurate models arising constantly, the technology is seeing a greater adoption in clinical environments to help streamline health diagnosis and reduce costs. One of these developments is the adaption of traditional convolutional networks with newer Vision Transformer (ViT) models that allow for better global understanding from an input image. These new ConvNext models provide better regularisation across training data, improving test data accuracy.
 ### Problem Outline
+This package seeks to implement a ConvNext Model capable of identifying Alzheimer's disease from labelled brain MRI scans contained in the ADNI dataset. The goal accuracy as provided in the ask is 80% or greater.
 ### Model
+[`modules.py`](modules.py)
+![ConvNext Architecture](images/ConvNextDiagram.png)
+*Figure 1: ConvNext Architecture*
+The designed model followed the standard practice structure. Incorporating four ConvNext Layers with the standard [3, 3, 9, 3] layout commonly seen in ConvNext-Tiny and ConvNext-Small applications. Where the balance of efficiency and power is paramount for classification success without spending large amounts of resources training too many weights. The larger third layer provides good mid-level feature extraction, something that is particularly useful in MRI image reasoning as it captures a lot of semantic abstraction, improving generalization.  
+
+The models ConvNext blocks also follow standard practises
 ### Data Loading
 ### Training
 ### Testing/Prediction
 ### Results
 ### Conclusion
 ### References
+https://www.researchgate.net/figure/The-architecture-of-the-ConvNeXt_fig4_361955951
 ### Dependencies
