@@ -63,8 +63,33 @@ To improve regularization and prevent overfitting to the training data, a series
 The combination of these transforms give the model the best chance to avoid overfitting and generalize. As mentioned in step 7, the model normalizes the images. The mean and standard deviation of the training set is dynamically calculated every time the model is run, thus allowing for different training sets to be used, for computational sake this could be hard coded if the model's training data was known in advance.
 ### Training
 [`train.py`](train.py)
-Training is performed on the ADNI dataset by running the [`train.py`](train.py) file or calling its train() function. This will 
+Training is performed on the ADNI dataset by running the [`train.py`](train.py) file or calling its train() function. This will load in the train and validation data loaders as well as create an instance of the model from [`modules.py`](modules.py). Then the model will be trained with the following training configuration in place.
+| Component | Value |
+| --------- | ---- |
+| Loss Function | BCEWithLogitsLoss|
+| Optimizer | AdamW |
+| Scheduler | CosineAnnealingLR | 
+| Total Epochs | 50 |
+| Batch Size | 32 | 
+| Learning Rate | 0.001 |
+| Weight Decay | 0.0001 |
+| Patience | 10 |
+
+The BCEWithLogitsLoss function is used for binary classification and uses function
+$$Loss = - [y \cdot log(\sigma(x)) + (1 - y)\cdot log(1 - \sigma(x))]$$
+Where $\sigma(x)$ is the sigmoid of the raw model output and $y$ is the true label. This combines both sigmoid activation and binary cross-entropy loss into one function, making it more numerically stable.  
+The AdamW optimizer decouples weight decay from gradient updates, helping to improve generalization, something that is crucial for medical classification.  
+The CosineAnnealingLR scheduler slowly lowers the learning rate over time, this helps to encourage smoother convergence.  
+The remaining hyper parameters were experimented with and found through trial and error. The patience hyper parameter is not required for the model to operate correctly, although was implemented to help free computational resources. It cuts training early, if after a number of epochs, the validation accuracy isn't improving.    
+
+Note that the accuracy scores and measurements are performed using patient level aggregation, meaning that the model predicts alzheimer's on a per patient basis, not on a per scan basis. This can be modelled with the following function.
+$$\hat{y}_p = \begin{cases}1 \text{ if } \frac{1}{|S_p|}\Sigma_{x_i\in S_p}f(x_i)>0.5\\0\end{cases}$$
+Where P is the set of all patients, $S_p = \{x_1, x_2, \dots, x_n\}$ for some $p \in P$, $f(x_i)$ is the model's sigmoid output for a scan $x_i$ and $\hat{y_p}$ is the predicted label for a patient. Finally, the accuracy can be computed with;
+$$\text{Accuracy} = \frac{1}{|P|}\Sigma_{p\in P}1[\hat{y_p} = y_p]$$
+Where 1[] is the indicator function, returning 1 if the input is true and 0 otherwise.
 ### Testing/Prediction
+[`predict.py`](predict.py)
+Testing of the model can be performed by running the [`predict.py`](predict.py) file or calling its predict() function directly. This will load in the saved model and test its accuracy on the test dataset, just like with training, the same patient level loss aggregation is used to find the accuracy. Unlike with the training set, all samples pulled from the data loader have not undergone the same random transformations as the training set. This provides the model with clean samples to perform prediction on, the only transform used is the resize, which maintains consistency between all samples at 224 x 224 pixels.
 ### Results
 ### Conclusion
 ### References
