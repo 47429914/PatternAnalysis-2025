@@ -1,0 +1,16 @@
+torch==2.7.1+cu118
+torchvision==0.22.1+cu118
+torchaudio==2.7.1+cu118
+numpy==2.1.2
+scikit-learn==1.7.2
+scikit-image==0.25.2
+matplotlib==3.10.5
+pillow==11.0.0
+tqdm==4.67.1
+imageio==2.37.0
+umap-learn==0.5.9.post2
+joblib==1.5.2
+networkx==3.3
+numba==0.61.2
+sympy==1.13.3
+typing-extensions==4.12.2
