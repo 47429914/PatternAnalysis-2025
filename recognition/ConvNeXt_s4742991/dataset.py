@@ -6,6 +6,9 @@ from torchvision import transforms
 import torch
 from sklearn.model_selection import train_test_split
 import numpy as np
+import matplotlib.pyplot as plt
+import random
+from PIL import ImageOps
 
 # Constants
 DATA_DIR = "/home/groups/comp3710/ADNI/AD_NC"
@@ -27,6 +30,40 @@ class ADNIDataset(Dataset):
         if self.transform:
             image = self.transform(image)
         return image, sample["label"], sample["patient_id"]
+
+# Image plotting for report
+def compare_transformed_images(dataset, output_path="transformed_vs_original.png", num_images=10):
+    indices = random.sample(range(len(dataset)), num_images)
+
+    original_images = []
+    transformed_images = []
+
+    for i in indices:
+        sample = dataset.samples[i]
+        # Load raw image (no transform)
+        raw_img = Image.open(sample["path"]).convert("L").resize((IMG_SIZE, IMG_SIZE))
+        original_images.append(raw_img)
+
+        # Apply transform manually
+        transformed_img = dataset.transform(raw_img)
+        transformed_images.append(transformed_img)
+
+    fig, axes = plt.subplots(2, num_images, figsize=(2.5 * num_images, 5))
+    fig.suptitle("Original (Top) vs Transformed (Bottom)", fontsize=16)
+
+    for i in range(num_images):
+        # Original
+        axes[0, i].imshow(original_images[i], cmap='gray')
+        axes[0, i].axis('off')
+
+        # Transformed
+        axes[1, i].imshow(transformed_images[i].squeeze(), cmap='gray')
+        axes[1, i].axis('off')
+
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+    print(f"✅ Saved comparison grid to: {os.path.abspath(output_path)}")
 
 # Compute mean and std from training set
 def compute_mean_std(dataset):
@@ -131,7 +168,6 @@ def get_dataloaders(batch_size=32, num_workers=1):
             return transforms.Compose([
                 transforms.Resize((IMG_SIZE, IMG_SIZE)),
                 transforms.RandomResizedCrop(IMG_SIZE, scale=(0.8, 1.0)),
-                transforms.RandomHorizontalFlip(p=0.5),
                 transforms.RandomRotation(15),
                 transforms.RandomAffine(degrees=0, translate=(0.1, 0.1), scale=(0.9, 1.1)),
                 transforms.ToTensor(),
@@ -159,9 +195,16 @@ def get_dataloaders(batch_size=32, num_workers=1):
         if fname.endswith(".jpeg")
     ], transform=get_transforms(train=False))
 
+    test_samples = test_dataset.samples
+    test_patient_ids = set(sample["patient_id"] for sample in test_samples)
+    print(f"🔢 Total test samples found: {len(test_samples)}")
+    print(f"🔢 Total test patients found: {len(test_patient_ids)}")
+
     print("Train label distribution:", Counter([s['label'] for s in train_dataset.samples]))
     print("Val label distribution:", Counter([s['label'] for s in val_dataset.samples]))
     print("Test label distribution:", Counter([s['label'] for s in test_dataset.samples]))
+
+    compare_transformed_images(train_dataset)
 
     # Create data loaders
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
